@@ -48,7 +48,7 @@ An AI-powered full-stack application that analyzes energy consumption, detects a
 - Anomaly detected → investigate unusual consumption
 
 ---
-##Dataset
+
 This project uses the **UCI Household Power Consumption Dataset**, a real-world dataset containing electricity usage measurements.
 
 Due to GitHub size limitations, the full dataset is not included in this repository.
