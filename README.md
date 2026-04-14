@@ -49,7 +49,15 @@ An AI-powered full-stack application that analyzes energy consumption, detects a
 
 ---
 
-## 🐳 Run with Docker
+## Run with Docker
 
 ```bash
 docker-compose -f docker/docker-compose.yml up --build
+
+
+---
+
+This project uses the **UCI Household Power Consumption Dataset**, a real-world dataset containing electricity usage measurements.
+
+Due to GitHub size limitations, the full dataset is not included in this repository.
+
