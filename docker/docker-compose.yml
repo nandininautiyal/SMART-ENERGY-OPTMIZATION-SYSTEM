@@ -1,33 +1,97 @@
 services:
 
+  # ── PySpark Job (pandas fallback, runs once) ─────────────
+  spark:
+    image: python:3.11-slim
+    container_name: energy_spark
+    volumes:
+      - ../data:/app/data
+      - ../ml_models:/app/ml_models
+    working_dir: /app
+    command: >
+      bash -c "
+        pip install pandas numpy --quiet --no-cache-dir &&
+        python ml_models/spark_processing/spark_job.py
+      "
+    networks:
+      - energy_net
+
+  # ── R Statistical Analysis (runs once) ───────────────────
+  r-analysis:
+    image: r-base:4.3.2
+    container_name: energy_r
+    volumes:
+      - ../data:/app/data
+    working_dir: /app/data
+    command: >
+      Rscript -e "
+        options(repos = c(CRAN = 'https://cran.rstudio.com/'));
+        pkgs <- c('ggplot2', 'gridExtra', 'scales', 'dplyr');
+        missing <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)];
+        if (length(missing) > 0) {
+          install.packages(missing, dependencies = TRUE, quiet = TRUE);
+        };
+        source('/app/data/analysis.R')
+      "
+    networks:
+      - energy_net
+
+  # ── FastAPI Backend ───────────────────────────────────────
   backend:
-    build: ../backend
-    container_name: backend_container
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: energy_backend
     ports:
       - "8000:8000"
     volumes:
-      - ../:/app
+      - ../data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - energy_net
     depends_on:
-      - spark
+      spark:
+        condition: service_completed_successfully
+      r-analysis:
+        condition: service_completed_successfully
 
+  # ── React Frontend ────────────────────────────────────────
   frontend:
-    build: ../frontend
-    container_name: frontend_container
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API=http://localhost:8000
+    container_name: energy_frontend
     ports:
-      - "3000:3000"
-    stdin_open: true
-    tty: true
+      - "3000:80"
+    networks:
+      - energy_net
     depends_on:
       - backend
 
-  spark:
-    image: apache/spark:3.5.0
-    container_name: spark_container
-    ports:
-      - "8080:8080"
+  # ── ML Preprocessing (optional profile only) ─────────────
+  ml-preprocess:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: energy_ml
+    volumes:
+      - ../data:/app/data
+      - ../ml_models:/app/ml_models
+    working_dir: /app
+    command: python ml_models/data_preprocessing.py
+    networks:
+      - energy_net
+    profiles:
+      - preprocess
 
-  rstudio:
-    image: rocker/rstudio:latest
-    container_name: r_container
-    ports:
-      - "8787:8787"
+networks:
+  energy_net:
+    driver: bridge

@@ -1,15 +1,26 @@
+# Data files (too large for GitHub)
+data/dataset.txt
+data/processed_spark_data.csv
+data/weekday_features.csv
+data/trend_features.csv
+data/trend_features.csv
+data/plot.png
+data/hourly_data.csv
+
 # Python
 __pycache__/
 *.pyc
+*.pyo
 venv/
+.env
 
 # Node
-node_modules/
-build/
+frontend/node_modules/
+frontend/build/
 
-# Data (optional large files)
-*.csv
+# Docker
+docker/volumes/
 
-# OS
-.DS_Store
-Thumbs.db
+# IDE
+.vscode/
+.idea/
